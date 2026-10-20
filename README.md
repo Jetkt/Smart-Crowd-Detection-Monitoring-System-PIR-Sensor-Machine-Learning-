@@ -1,0 +1,2 @@
+# Smart-Crowd-Detection-Monitoring-System-PIR-Sensor-Machine-Learning-
+Proyek ini bertujuan untuk pemantauan ruangan. sistem ini dilatih menggunakan dataset pergerakan historis selama 30 hari untuk mengenali pola keramaian. Model kecerdasan buatan akan mengklasifikasikan data tersebut dan mendistribusikan hasilnya ke platform web dan Telegram agar mudah dipantau oleh pengelola gedung atau administrator.
