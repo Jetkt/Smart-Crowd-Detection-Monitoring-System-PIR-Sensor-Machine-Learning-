@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Smart Room Monitoring</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+:root {
+    --bg: #0f172a;
+    --card: #111827;
+    --text: #e5e7eb;
+    --soft: #94a3b8;
+    --green: #22c55e;
+    --red: #ef4444;
+    --blue: #3b82f6;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: linear-gradient(135deg, #020617, #0f172a);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+}
+
+.container {
+    width: 100%;
+    max-width: 900px;
+    padding: 30px 15px;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.header h1 {
+    font-size: 28px;
+    margin: 0;
+}
+
+.header p {
+    color: var(--soft);
+    margin-top: 8px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 20px 40px rgba(0,0,0,.35);
+}
+
+.status-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+}
+
+.status {
+    font-size: 22px;
+    font-weight: bold;
+    padding: 14px 22px;
+    border-radius: 40px;
+    transition: .3s;
+}
+
+.green {
+    background: rgba(34,197,94,.15);
+    color: var(--green);
+}
+
+.red {
+    background: rgba(239,68,68,.15);
+    color: var(--red);
+}
+
+.info {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.info div {
+    background: rgba(255,255,255,.03);
+    border-radius: 10px;
+    padding: 10px;
+    text-align: center;
+}
+
+.info span {
+    display: block;
+    font-size: 13px;
+    color: var(--soft);
+}
+
+.info strong {
+    font-size: 16px;
+}
+
+.chart-title {
+    font-size: 16px;
+    margin-bottom: 12px;
+    color: var(--blue);
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <h1>🏢 Smart Room Monitoring</h1>
+        <p>ESP32 PIR · AI Prediction · Realtime Dashboard</p>
+    </div>
+
+    <div class="grid">
+
+        <!-- STATUS CARD -->
+        <div class="card status-box">
+            <div id="status" class="status green">NO DATA</div>
+
+            <div class="info">
+                <div>
+                    <span>PIR</span>
+                    <strong id="pir">-</strong>
+                </div>
+                <div>
+                    <span>Confidence</span>
+                    <strong id="conf">-</strong>
+                </div>
+                <div>
+                    <span>Status</span>
+                    <strong id="label">-</strong>
+                </div>
+                <div>
+                    <span>Last Update</span>
+                    <strong id="time">-</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHART -->
+        <div class="card">
+            <div class="chart-title">📊 Realtime Detection</div>
+            <canvas id="chart"></canvas>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+let labels = [];
+let dataPoints = [];
+
+const ctx = document.getElementById("chart").getContext("2d");
+const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: 'Deteksi Orang',
+            data: dataPoints,
+            borderColor: '#3b82f6',
+            tension: 0.4,
+            fill: false
+        }]
+    },
+    options: {
+        responsive: true,
+        animation: false,
+        scales: {
+            y: {
+                min: 0,
+                max: 1,
+                ticks: { stepSize: 1 }
+            }
+        }
+    }
+});
+
+function refreshData() {
+    fetch("/api/latest")
+        .then(r => r.json())
+        .then(d => {
+            if (d.status === "NO_DATA") return;
+
+            const statusEl = document.getElementById("status");
+            const labelEl = document.getElementById("label");
+
+            statusEl.innerText = d.status.replace("_", " ");
+            labelEl.innerText = d.status;
+
+            if (d.pred === 1) {
+                statusEl.className = "status red";
+            } else {
+                statusEl.className = "status green";
+            }
+
+            document.getElementById("pir").innerText = d.pir;
+            document.getElementById("conf").innerText = d.confidence;
+            document.getElementById("time").innerText = d.timestamp;
+
+            labels.push(d.timestamp.split(" ")[1]);
+            dataPoints.push(d.pred);
+
+            if (labels.length > 12) {
+                labels.shift();
+                dataPoints.shift();
+            }
+
+            chart.update();
+        });
+}
+
+setInterval(refreshData, 2000);
+</script>
+
+</body>
+</html>
